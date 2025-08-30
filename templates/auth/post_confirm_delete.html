@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Title</title>
 </head>
 <body>
-$END$
+<!-- templates/posts/post_confirm_delete.html -->
+<form method="post">{% csrf_token %}
+  <p>Are you sure you want to delete "{{ object.title }}"?</p>
+  <button type="submit">Confirm</button>
+</form>
+
 </body>
 </html>

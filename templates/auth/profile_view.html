@@ -54,4 +54,18 @@
     padding: 0.5em 1em;
 }
 </style>
+
+    <!-- templates/auth/profile_view.html -->
+{% if user.is_staff %}
+  <h2>Jobs Created</h2>
+  {% for job in jobs_created %}
+    <p>{{ job.title }}</p>
+  {% endfor %}
+{% else %}
+  <h2>Jobs Applied</h2>
+  {% for job in jobs_applied %}
+    <p>{{ job.title }}</p>
+  {% endfor %}
+{% endif %}
+
 {% endblock %}

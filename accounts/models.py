@@ -91,3 +91,9 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.email
+
+def upload_image_path(instance, filename):
+    # Store in profile_picture folder, rename with user id and original extension
+    ext = filename.split('.')[-1]
+    filename = f"{instance.user.id}.{ext}"
+    return f"profile_picture/{filename}"

@@ -7,6 +7,12 @@ from django.db import IntegrityError
 from .models import Profile, CustomUser
 from jobs.models import Job, JobApplicant
 
+from django.shortcuts import redirect
+from django.contrib.auth import authenticate, login
+from .models import Profile
+
+from django.contrib.auth.decorators import login_required
+
 # Create your views here.
 
 def signup_view(request):
@@ -74,22 +80,64 @@ def signup_view(request):
             messages.error(request, 'An error occurred while creating your account. Please try again.')
             return render(request, 'auth/signup.html', {'email': email, 'username': username})
     return render(request, 'auth/signup.html')
+# accounts/views.py
 def signin_view(request):
+    if request.user.is_authenticated:
+        messages.info(request, 'You are already signed in.')
+        return redirect('posts:post-list')
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
         user = authenticate(request, email=email, password=password)
+
         if user is not None:
             login(request, user)
-            if not Profile.objects.filter(user=user).exists():
-                print('User does not have a profile.')
-            print('User has a profile.')
+            messages.success(request, 'Signed in successfully!')
+            return redirect('posts:post-list')
         else:
-            messages.error(request, 'Invalid email or password')
+            messages.error(request, 'Invalid email or password.')
+            return render(request, 'auth/signin.html', {'email': email})
     return render(request, 'auth/signin.html')
 
-def profile_create_view(request):
-    pass
+def profile_edit_view(request):
+    if not request.user.is_authenticated:
+        messages.error(request, 'Please sign in first.')
+        return redirect('auth:signin')
+
+    profile = Profile.objects.filter(user=request.user).first()
+    if not profile:
+        messages.info(request, 'Profile does not exist. Please create one.')
+        return redirect('auth:profile_create')
+
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        bio = request.POST.get('bio', '').strip()
+        location = request.POST.get('location', '').strip()
+        website = request.POST.get('website', '').strip()
+
+        # Validate required fields
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return render(request, 'auth/profile_edit.html', {
+                'profile': profile,
+                'full_name': full_name,
+                'bio': bio,
+                'location': location,
+                'website': website
+            })
+
+        # Update profile
+        profile.full_name = full_name
+        profile.bio = bio
+        profile.location = location
+        profile.website = website
+        profile.save()
+
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('auth:profile_view')
+
+    return render(request, 'auth/profile_edit.html', {'profile': profile})
 def profile_view(request):
     if not request.user.is_authenticated:
         messages.error(request, 'Please sign in first.')
@@ -120,3 +168,42 @@ def profile_view(request):
 def logout_view(request):
     logout(request)
     return redirect('auth:signin')
+
+def profile_create_view(request):
+    if not request.user.is_authenticated:
+        messages.error(request, 'Please sign in first.')
+        return redirect('auth:signin')
+
+    if Profile.objects.filter(user=request.user).exists():
+        messages.info(request, 'Profile already exists. You can edit it.')
+        return redirect('auth:profile_edit')
+
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        bio = request.POST.get('bio', '').strip()
+        location = request.POST.get('location', '').strip()
+        website = request.POST.get('website', '').strip()
+
+        # Validate required fields
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return render(request, 'auth/profile_create.html', {
+                'full_name': full_name,
+                'bio': bio,
+                'location': location,
+                'website': website
+            })
+
+        # Create profile
+        Profile.objects.create(
+            user=request.user,
+            full_name=full_name,
+            bio=bio,
+            location=location,
+            website=website
+        )
+
+        messages.success(request, 'Profile created successfully!')
+        return redirect('auth:profile_view')
+
+    return render(request, 'auth/profile_create.html')

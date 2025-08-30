@@ -6,6 +6,10 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse_lazy
 from .models import Post
 from .forms import PostForm
+
+from django.views.generic import DetailView, UpdateView
+from .models import Post
+
 # Create your views here.
 class PostListView(ListView):
     model = Post
@@ -53,3 +57,13 @@ class PostCreateView(CreateView):
     def form_valid(self, form):
         form.instance.user = self.request.user
         return super().form_valid(form)
+
+class PostDetailSlugView(DetailView):
+    model = Post
+    slug_field = 'slug'
+    slug_url_kwarg = 'slug'
+
+class PostUpdateView(UpdateView):
+    model = Post
+    fields = ['title', 'content', 'image']
+    template_name = 'posts/post_update.html'
