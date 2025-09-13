@@ -7,6 +7,12 @@ from django.dispatch import receiver
 from .models import Post
 from django.utils.text import slugify
 
+def post_pre_save_receiver(sender, instance, *args, **kwargs):
+    if not instance.slug:
+        instance.slug = slugify(instance.title)
+
+pre_save.connect(post_pre_save_receiver, sender=Post)
+
 def random_string_generator(size=10, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 

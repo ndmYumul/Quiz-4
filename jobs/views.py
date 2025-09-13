@@ -7,25 +7,26 @@ from django.views.generic.edit import CreateView
 from .forms import JobForm
 from .models import Job, JobApplicant
 
-from django.contrib.auth.mixins import UserPassesTestMixin
-from django.views.generic import CreateView
-from .models import Job
-
-from django.shortcuts import render
-from .models import Job
-
-from django.views.generic import DetailView
-from .models import Job, JobApplicant
 
 # Create your views here.
 
-class JobCreateView(UserPassesTestMixin, CreateView):
+class JobCreateView(CreateView):
     model = Job
-    fields = ['title', 'description', 'requirements']
+    form_class = JobForm
     template_name = 'jobs/job_create.html'
+    success_url = reverse_lazy('jobs:job_list_view')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+    def handle_no_permission(self):
+        return redirect('jobs:job_list_view')
 
     def test_func(self):
         return self.request.user.is_staff
+
+
 def job_list_view(request):
     jobs = Job.objects.all()
     query = request.GET.get('q', None)
@@ -38,7 +39,8 @@ def job_list_view(request):
     context = {
         'jobs': jobs,
     }
-    return render(request, 'jobs/job_list.html')
+    return render(request, 'jobs/job_list.html', context)
+
 
 def job_detail_view(request, pk):
     try:
@@ -49,10 +51,10 @@ def job_detail_view(request, pk):
             return render(request, 'auth/401.html', status=401)
     except Job.DoesNotExist:
         return render(request, 'auth/404.html', status=404)
-        
+
     applicants = JobApplicant.objects.filter(job=job)
     has_applied = JobApplicant.objects.filter(job=job, user=user).exists() if user.is_authenticated else False
-    
+
     context = {
         'job': job,
         'user': user,
@@ -60,6 +62,7 @@ def job_detail_view(request, pk):
         'has_applied': has_applied,
     }
     return render(request, 'jobs/job_detail.html', context)
+
 
 class JobUpdateView(UpdateView):
     form_class = JobForm
@@ -90,6 +93,7 @@ class JobDeleteView(DeleteView):
             raise PermissionError("You do not have permission to delete this job.")
         return job
 
+
 def job_apply(request, pk):
     job = get_object_or_404(Job, pk=pk)
     if request.method == 'POST':
@@ -103,21 +107,3 @@ def job_apply(request, pk):
         messages.success(request, 'Application submitted successfully!')
         return redirect('jobs:job_detail_view', pk=job.pk)
     return render(request, 'jobs/job_apply.html', {'job': job})
-
-def job_list_view(request):
-    query = request.GET.get('q')
-    jobs = Job.objects.all()
-    if query:
-        jobs = jobs.filter(title__icontains=query)
-    return render(request, 'jobs/job_list.html', {'jobs': jobs})
-
-class JobDetailView(DetailView):
-    model = Job
-    template_name = 'jobs/job_detail.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        job = self.get_object()
-        context['already_applied'] = JobApplicant.objects.filter(user=user, job=job).exists()
-        return context

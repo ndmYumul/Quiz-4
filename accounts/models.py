@@ -3,13 +3,22 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 import os
 import random
+
+
 def get_filename_ext(filepath):
     base_name = os.path.basename(filepath)
     name, ext = os.path.splitext(base_name)
     return name, ext
 
+
 def upload_image_path(instance, filename):
-    pass
+    new_filename = random.randint(1, 151251251)
+    name, ext = get_filename_ext(filename)
+    final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
+
+    return f"profile_pics/{new_filename}/{final_filename}".format(new_filename=new_filename,
+                                                                  final_filename=final_filename)
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, username, password=None, is_active=True, is_staff=False, is_admin=False):
@@ -19,7 +28,7 @@ class UserManager(BaseUserManager):
             raise ValueError('Users must have a password')
 
         user_obj = self.model(
-            email = self.normalize_email(email)
+            email=self.normalize_email(email)
         )
         user_obj.username = username
         user_obj.set_password(password)  # Hash the password
@@ -30,11 +39,11 @@ class UserManager(BaseUserManager):
 
         return user_obj
 
-    def create_staffuser(self, email,username, password=None):
-        user = self.create_user(email,username, password, is_staff=True, is_active=True)
+    def create_staffuser(self, email, username, password=None):
+        user = self.create_user(email, username, password, is_staff=True, is_active=True)
         return user
 
-    def create_superuser(self, email,username, password=None):
+    def create_superuser(self, email, username, password=None):
         user = self.create_user(
             email,
             username,
@@ -45,6 +54,7 @@ class UserManager(BaseUserManager):
         )
         return user
 
+
 # Create your models here.
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True, blank=False)
@@ -52,10 +62,10 @@ class CustomUser(AbstractUser):
     staff = models.BooleanField(default=False)
     active = models.BooleanField(default=True)
     admin = models.BooleanField(default=False)
-    
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-    
+
     objects = UserManager()
 
     def __str__(self):
@@ -78,8 +88,6 @@ class CustomUser(AbstractUser):
     @property
     def is_admin(self):
         return self.admin
-    
-
 
 
 class Profile(models.Model):
@@ -92,8 +100,3 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.email
 
-def upload_image_path(instance, filename):
-    # Store in profile_picture folder, rename with user id and original extension
-    ext = filename.split('.')[-1]
-    filename = f"{instance.user.id}.{ext}"
-    return f"profile_picture/{filename}"

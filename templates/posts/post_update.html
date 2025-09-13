@@ -1,9 +1,8 @@
-<!-- templates/posts/post_update.html -->
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block content %}
-<h2>Update Post</h2>
+<h2>Edit Post</h2>
 <form method="post" enctype="multipart/form-data">{% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Update</button>
+    <button type="submit" class="btn btn-success">Update</button>
 </form>
 {% endblock %}
